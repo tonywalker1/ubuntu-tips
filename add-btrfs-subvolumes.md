@@ -4,7 +4,9 @@ You are here because you want to use Btrfs on Ubuntu or Debian, so I won't try t
 
 ## Warning: Never blindly follow directions from the Internet. That includes me! Make sure you read and understand each step...
 
-First we need to mount the (possibly encrypted volume). Everything that follows will need to be adjusted for your specific system and use-case. 
+Start by booting from a Live ISO and open a terminal.
+
+Next we need to mount the (possibly encrypted volume). Everything that follows will need to be adjusted for your specific system and use-case. 
 ```
 sudo cryptsetup luksOpen /dev/nvme0n1p3 stuff
 sudo mkdir /mnt/root /mnt/target
