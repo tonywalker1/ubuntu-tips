@@ -1,23 +1,39 @@
+# Add Btrfs subvolumes to a new installation of Ubuntu (or Debian)
+
+## Warning: Never blindly follow directions from the Internet. That includes me! Make sure you read and understand each step...
+
+First we need to mount the (possibly encrypted volume). Everything that follows will need to be adjusted for your specific system and use-case. 
+```
 sudo cryptsetup luksOpen /dev/nvme0n1p3 stuff
 sudo mkdir /mnt/root /mnt/target
 sudo mount -o noatime /dev/mapper/stuff /mnt/root/
+```
 
+The above commands created two mount points: one for the Btrfs tree (/mnt/root) and one to test mount our subvolumes (/mnt/target). With the Btrfs tree mounted, let's look at it...
+```
 sudo btrfs subvolume list /mnt/root
-ID 256 gen 25 top level 5 path @
-ID 257 gen 17 top level 5 path @home
+# ID 256 gen 25 top level 5 path @
+# ID 257 gen 17 top level 5 path @home
 
+```
+
+```
 cat /mnt/root/@/etc/fstab
-# <file system> <mount point>   <type>  <options>       <dump>  <pass>
-/dev/mapper/nvme0n1p3_crypt /               btrfs   defaults,subvol=@ 0       1
-# /boot was on /dev/nvme0n1p2 during installation
-UUID=947fb6b5-8b1d-4f34-be95-b3d369b52eab /boot           ext4    defaults        0       2
-# /boot/efi was on /dev/nvme0n1p1 during installation
-UUID=B308-F41D  /boot/efi       vfat    umask=0077      0       1
-/dev/mapper/nvme0n1p3_crypt /home           btrfs   defaults,subvol=@home 0       2
+# /dev/mapper/nvme0n1p3_crypt /               btrfs   defaults,subvol=@ 0       1
+# UUID=947fb6b5-8b1d-4f34-be95-b3d369b52eab /boot           ext4    defaults        0       2
+# UUID=B308-F41D  /boot/efi       vfat    umask=0077      0       1
+# /dev/mapper/nvme0n1p3_crypt /home           btrfs   defaults,subvol=@home 0       2
+```
 
+Now, let's mount the @ and @home subvolumes that Ubuntu created for us...
+```
 sudo mount -o noatime,subvol=@ /dev/mapper/stuff /mnt/target/
 sudo mount -o noatime,subvol=@home /dev/mapper/stuff /mnt/target/home/
+```
+Now, we are ready to do some real work.
 
+Think *carefully* about which subvolumes you want to create. The following is what I usually do...
+```
 sudo btrfs subvolume create @snapshots
 sudo btrfs subvolume create @var
 sudo btrfs subvolume create @containers
@@ -28,11 +44,18 @@ sudo btrfs subvolume create @machines
 sudo btrfs subvolume create @portables
 sudo btrfs subvolume create @log
 sudo btrfs subvolume create @var_tmp
+```
 
+Before moving files into our new subvolumes, let's make using the wildcard easier...
+```
 shopt -s dotglob
+```
 
+On Btrfs, it is considered good practice to run use tmpfs with an SSD. There is some debate about that, but let's roll with this for now...
+```
 sudo rm -rf /mnt/root/@/tmp/*
 sudo mount  -t tmpfs -o noatime,nosuid,nodev,size=4G none /mnt/target/tmp/
+```
 
 sudo mkdir /mnt/target/snapshots
 sudo mount -o noatime,nosuid,nodev,noexec,subvol=@snapshots /dev/mapper/stuff /mnt/target/snapshots/
