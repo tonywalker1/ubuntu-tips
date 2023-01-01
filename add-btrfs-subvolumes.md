@@ -39,6 +39,7 @@ Now, we are ready to do some real work.
 
 Think *carefully* about which subvolumes you want to create. The following is some version of what I often do...
 ```
+cd /mnt/root
 sudo btrfs subvolume create @snapshots
 sudo btrfs subvolume create @var
 sudo btrfs subvolume create @containers
