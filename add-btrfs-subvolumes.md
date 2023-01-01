@@ -94,6 +94,9 @@ sudo mount -o noatime,nosuid,nodev,noexec,subvol=@log /dev/mapper/stuff /mnt/tar
 
 sudo mv /mnt/root/@var/tmp/* /mnt/root/@var_tmp/
 sudo mount -o noatime,nosuid,nodev,subvol=@var_tmp /dev/mapper/stuff /mnt/target/var/tmp
+
+sudo chmod 0700 /mnt/target/snapshots
+sudo chmod 1777 /mnt/target/var/tmp
 ```
 Ok, that was a lot of practice and repetition. Now, say you want to install Postgres. Knowing that Postres can be disk instensive, you might want to place the database(s) in a subvolume. You should now be able to do that!
 
