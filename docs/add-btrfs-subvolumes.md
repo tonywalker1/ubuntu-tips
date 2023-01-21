@@ -19,7 +19,7 @@ sudo mount -o noatime /dev/mapper/stuff /mnt/root/
 ```
 
 The above commands created two mount points: one for the Btrfs tree (/mnt/root) and one to test
-mount our subvolumes (/mnt/target). NOTE: The mount command **did NOT** use subvol=...!
+mount our sub-volumes (/mnt/target). NOTE: The mount command **did NOT** use subvol=...!
 
 With the Btrfs tree mounted, let's look at it...
 
@@ -46,8 +46,17 @@ sudo mount -o noatime,subvol=@home /dev/mapper/stuff /mnt/target/home/
 
 Now, we are ready to do some real work.
 
-Think *carefully* about which sub-volumes you want to create. The following is some version of what I
-often do...
+Think *carefully* about which sub-volumes you want to create. 
+
+I create sub-volumes for two reasons:
+1. Security and control. For example, some directories (e.g., ```/var/tmp```) should be mounted with 
+   ```nosuid``` and ```nodev```. Creating a sub-volume allows me to control mount-time settings.   
+2. Performance. Btrfs has one queue per sub-volume. By placing disk-intensive applications on a 
+   separate sub-volume, other sub-volumes may have better access to the underlying storage. Of 
+   course, benchmarking is necessary to determine if this is always true for a specific workload.
+   Still, I have decided that it is a good rule-of-thumb for me.
+
+The following is some version of what I often do...
 
 ```
 cd /mnt/root
@@ -70,7 +79,7 @@ Before moving files into our new sub-volumes, let's make using the wildcard easi
 shopt -s dotglob
 ```
 
-On Btrfs, it is considered good practice to run use tmpfs with an SSD.
+With a SSD, it is considered good practice to run use tmpfs for ```/tmp```.
 
 ```
 sudo rm -rf /mnt/root/@/tmp/*
@@ -95,9 +104,13 @@ sudo mount -o noatime,subvol=@containers /dev/mapper/stuff /mnt/target/var/lib/c
 sudo mv /mnt/root/@var/lib/dpkg/* /mnt/root/@dpkg/
 sudo mount -o noatime,nosuid,nodev,subvol=@dpkg /dev/mapper/stuff /mnt/target/var/lib/dpkg
 
+#
 # Kubuntu installs Flatpak automatically, so do this instead...
+#
     sudo mv /mnt/root/@var/lib/flatpak/* /mnt/root/@flatpak/
+#
 # For Ubuntu do this...
+#
     sudo mkdir /mnt/target/var/lib/flatpak
 #
 sudo mount -o noatime,nosuid,nodev,subvol=@flatpak /dev/mapper/stuff /mnt/target/var/lib/flatpak
@@ -114,6 +127,7 @@ sudo mount -o noatime,subvol=@portables /dev/mapper/stuff /mnt/target/var/lib/po
 sudo mv /mnt/root/@var/log/* /mnt/root/@log/
 sudo mount -o noatime,nosuid,nodev,noexec,subvol=@log /dev/mapper/stuff /mnt/target/var/log
 
+# This move may fail if /tmp is empty. This is OK and expected.
 sudo mv /mnt/root/@var/tmp/* /mnt/root/@var_tmp/
 sudo mount -o noatime,nosuid,nodev,subvol=@var_tmp /dev/mapper/stuff /mnt/target/var/tmp
 
@@ -121,8 +135,8 @@ sudo chmod 0700 /mnt/target/snapshots
 sudo chmod 1777 /mnt/target/var/tmp
 ```
 
-Ok, that was a lot of practice and repetition. Now, say you want to install Postgres. Knowing that
-PostreSQL can be disk intensive, you might want to place the database(s) in a sub-volume. You should
+Ok, that was a lot of practice and repetition. Now, say you want to install PostgreSQL. Knowing that
+it can be disk intensive, you might want to place the database(s) in a sub-volume. You should
 now be able to do that!
 
 One last thing, we need to edit fstab to add the new volumes...
@@ -136,6 +150,7 @@ Here is the /etc/fstab for the above scenario...
 ```
 /dev/mapper/nvme0n1p3_crypt /                    btrfs   noatime,subvol=@                               0  0
 /dev/mapper/nvme0n1p3_crypt /home                btrfs   noatime,nosuid,nodev,subvol=@home              0  0
+/dev/mapper/nvme0n1p3_crypt /snap                btrfs   noatime,nosuid,nodev,noexec,subvol=@snap       0  0
 /dev/mapper/nvme0n1p3_crypt /snapshots           btrfs   noatime,nosuid,nodev,noexec,subvol=@snapshots  0  0
 tmpfs                       /tmp                 tmpfs   noatime,nosuid,nodev,size=4G                   0  0
 /dev/mapper/nvme0n1p3_crypt /var                 btrfs   noatime,nosuid,nodev,noexec,subvol=@var        0  0
@@ -152,3 +167,6 @@ UUID=947fb6b5-8b1d-4f34-be95-b3d369b52eab /boot           ext4    defaults      
 
 UUID=B308-F41D  /boot/efi       vfat    umask=0077      0       1
 ```
+
+Reboot.
+
