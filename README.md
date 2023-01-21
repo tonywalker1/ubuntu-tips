@@ -9,3 +9,5 @@ Make sure you read and understand each step...**
 
 ## Contents
 [Add Btrfs Subvolumes](./docs/add-btrfs-subvolumes.md)
+
+[Secure DNS](./docs/systemd-resolved.md)
