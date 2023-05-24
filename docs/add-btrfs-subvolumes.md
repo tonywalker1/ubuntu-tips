@@ -64,12 +64,14 @@ sudo btrfs subvolume create @snap
 sudo btrfs subvolume create @snapshots
 sudo btrfs subvolume create @var
 sudo btrfs subvolume create @containers
+sudo btrfs subvolume create @debconf
 sudo btrfs subvolume create @dpkg
 sudo btrfs subvolume create @flatpak
 sudo btrfs subvolume create @libvirt
 sudo btrfs subvolume create @machines
 sudo btrfs subvolume create @portables
 sudo btrfs subvolume create @log
+sudo btrfs subvolume create @audit
 sudo btrfs subvolume create @var_tmp
 ```
 
@@ -98,11 +100,14 @@ sudo mount -o noatime,nosuid,nodev,noexec,subvol=@snapshots /dev/mapper/stuff /m
 sudo mv /mnt/root/@/var/* /mnt/root/@var/
 sudo mount -o noatime,nosuid,nodev,noexec,subvol=@var /dev/mapper/stuff /mnt/target/var
 
+sudo mv /mnt/root/@var/cache/debconf/* /mnt/root/@debconf/
+sudo mount -o noatime,subvol=@debconf /dev/mapper/stuff /mnt/target/var/cache/debconf
+
 sudo mkdir /mnt/target/var/lib/containers
 sudo mount -o noatime,subvol=@containers /dev/mapper/stuff /mnt/target/var/lib/containers/
 
 sudo mv /mnt/root/@var/lib/dpkg/* /mnt/root/@dpkg/
-sudo mount -o noatime,nosuid,nodev,subvol=@dpkg /dev/mapper/stuff /mnt/target/var/lib/dpkg
+sudo mount -o noatime,subvol=@dpkg /dev/mapper/stuff /mnt/target/var/lib/dpkg
 
 #
 # Kubuntu installs Flatpak automatically, so do this instead...
@@ -126,6 +131,10 @@ sudo mount -o noatime,subvol=@portables /dev/mapper/stuff /mnt/target/var/lib/po
 
 sudo mv /mnt/root/@var/log/* /mnt/root/@log/
 sudo mount -o noatime,nosuid,nodev,noexec,subvol=@log /dev/mapper/stuff /mnt/target/var/log
+
+sudo mkdir /mnt/target/var/log/audit
+sudo mv /mnt/root/@var/log/audit* /mnt/root/@audit/
+sudo mount -o noatime,nosuid,nodev,noexec,subvol=@audit /dev/mapper/stuff /mnt/target/var/log/audit
 
 # This move may fail if /tmp is empty. This is OK and expected.
 sudo mv /mnt/root/@var/tmp/* /mnt/root/@var_tmp/
@@ -154,13 +163,15 @@ Here is the /etc/fstab for the above scenario...
 /dev/mapper/nvme0n1p3_crypt /snapshots           btrfs   noatime,nosuid,nodev,noexec,subvol=@snapshots  0  0
 tmpfs                       /tmp                 tmpfs   noatime,nosuid,nodev,size=4G                   0  0
 /dev/mapper/nvme0n1p3_crypt /var                 btrfs   noatime,nosuid,nodev,noexec,subvol=@var        0  0
+/dev/mapper/nvme0n1p3_crypt /var/cache/debconf   btrfs   noatime,subvol=@debconf                        0  0
 /dev/mapper/nvme0n1p3_crypt /var/lib/containers  btrfs   noatime,subvol=@containers                     0  0
-/dev/mapper/nvme0n1p3_crypt /var/lib/dpkg        btrfs   noatime,nosuid,nodev,subvol=@dpkg              0  0
+/dev/mapper/nvme0n1p3_crypt /var/lib/dpkg        btrfs   noatime,subvol=@dpkg                           0  0
 /dev/mapper/nvme0n1p3_crypt /var/lib/flatpak     btrfs   noatime,nosuid,nodev,subvol=@flatpak           0  0
 /dev/mapper/nvme0n1p3_crypt /var/lib/libvirt     btrfs   noatime,nosuid,nodev,noexec,subvol=@libvirt    0  0
 /dev/mapper/nvme0n1p3_crypt /var/lib/machines    btrfs   noatime,subvol=@machines                       0  0
 /dev/mapper/nvme0n1p3_crypt /var/lib/portables   btrfs   noatime,subvol=@portables                      0  0
 /dev/mapper/nvme0n1p3_crypt /var/log             btrfs   noatime,nosuid,nodev,noexec,subvol=@log        0  0
+/dev/mapper/nvme0n1p3_crypt /var/log/audit       btrfs   noatime,nosuid,nodev,noexec,subvol=@audit      0  0
 /dev/mapper/nvme0n1p3_crypt /var/tmp             btrfs   noatime,nosuid,nodev,subvol=@var_tmp           0  0
 
 UUID=947fb6b5-8b1d-4f34-be95-b3d369b52eab /boot           ext4    defaults        0       2
